@@ -11,28 +11,47 @@ function Register(props) {
   const [isAdmin, setAdmin] = useState("0");
   const [error, setError] = useState("");
 
-  const handleUserRegistration = () => {
+  const handleUserRegistration = async () => {
     if (validateInputs()) {
       const newUser = {
-        email: email,
+        email,
         password: pass,
-        isAdmin: isAdmin,
-        fname: fname,
-        lname: lname,
+        isAdmin,
+        fname,
+        lname,
       };
-
-      let url = `${getBaseURL()}api/users/register`;
-      axios
-        .post(url, { ...newUser })
-        .then((res) => {
-          if (res.data != null) {
-            console.log("User registered successfully");
-            props.navigateToLoginPage();
-          }
-        })
-        .catch((err) => console.log("Sorry unable to add new user"));
+  
+      const url = `${getBaseURL()}api/users/register`;
+  
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newUser),
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        console.log("User registered successfully:", data);
+  
+        if (props?.navigateToLoginPage) {
+          props.navigateToLoginPage();
+        } else {
+          console.warn("navigateToLoginPage function is missing in props.");
+        }
+      } catch (err) {
+        console.error("Error registering user:", err.message);
+      }
+    } else {
+      console.warn("Validation failed. Please check input fields.");
     }
   };
+  
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

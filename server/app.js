@@ -15,6 +15,9 @@ app.use(express.json());
 // Connect to the database
 
 // Mount routes
+app.get('/', (req,res)=>{
+    res.status(200).send("hello world");
+})
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);

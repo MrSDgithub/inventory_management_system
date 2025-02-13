@@ -5,47 +5,37 @@ const bcrypt = require('bcryptjs');
 const { generateAccessAndRefreshToken, refreshToken } = require('../utils/token'); 
 
 
-exports.register = (email, password, isAdmin, fname, lname) => {
-    return new Promise((resolve, reject) => {
-        // First, check if the user with the provided email already exists
-        pool.query(
-            "SELECT * FROM users WHERE email = ?",
-            [email],
-            (err, results) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    if (results.length > 0) {
-                        // User with this email already exists
-                        reject(new Error("User already exists"));
-                    } else {
-                        // User does not exist, proceed with registration
-                        // Hash the password before storing it
-                        bcrypt.hash(password, 10, (hashErr, hashedPassword) => {
-                            if (hashErr) {
-                                reject(hashErr);
-                            } else {
-                                // Truncate hashed password to fit into VARCHAR(15) column
-                                // const truncatedHashedPassword = hashedPassword.substring(0, 15);
-                                pool.query(
-                                    "INSERT INTO users (email, password, isAdmin, fname, lname) VALUES (?,?,?,?,?);",
-                                    [email, hashedPassword, isAdmin, fname, lname],
-                                    (insertErr, result) => {
-                                        if (insertErr) {
-                                            reject(insertErr);
-                                        } else {
-                                            resolve(result);
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                    }
-                }
-            }
-        );
-    });
+// const bcrypt = require("bcrypt");
+// const pool = require("../database"); // Ensure you have the correct database connection
+
+exports.register = async (email, password, isAdmin, fname, lname) => {
+  try {
+    // Check if the user already exists
+    const [existingUser] = await pool
+      .promise()
+      .query("SELECT * FROM users WHERE email = ?", [email]);
+
+    if (existingUser.length > 0) {
+      throw new Error("User already exists");
+    }
+
+    // Hash the password before storing it
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user into the database
+    const [result] = await pool
+      .promise()
+      .query(
+        "INSERT INTO users (email, password, isAdmin, fname, lname) VALUES (?, ?, ?, ?, ?)",
+        [email, hashedPassword, isAdmin, fname, lname]
+      );
+
+    return result;
+  } catch (error) {
+    throw error; // Re-throw the error to be handled by the caller
+  }
 };
+
 
 
 exports.login = (email, password) => {
